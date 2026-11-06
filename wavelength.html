@@ -38,18 +38,7 @@ const MILD = [
   ["Kids' thing","Adults' thing"],["Overpriced","Worth every cent"],["Bad superpower","Great superpower"],["Low effort","High effort"],
   ["Calm","Chaotic"],["Scary","Cute"],["Old-fashioned","Futuristic"],["Mid food","Elite food"],["Bad gift","Great gift"],["Normal hobby","Weird hobby"]
 ];
-const SPICY = [
-  ["Wholesome","Freaky"],["Forgivable","Unforgivable in a relationship"],["Not cheating","Cheating"],["Vanilla","Kinky"],
-  ["Fine on a first date","Way too much on a first date"],["Tipsy","Blackout"],["Classy","Trashy"],["Green flag","Red flag"],
-  ["Socially acceptable","Gets you cancelled"],["Mild sin","Straight to hell"],["Turn-on","Instant turn-off"],
-  ["Ethical way to get rich","Evil way to get rich"],["Fine to post","Keep it in the group chat"],["Hookup material","Marriage material"],
-  ["Normal thing to sext","Unhinged thing to sext"],["Fine to lie about","Never okay to lie about"],["Fine at 25","Embarrassing at 35"],
-  ["Harmless crush","Emotional affair"],["Pathetic","Hot"],["Overrated in bed","Underrated in bed"],["Tell your mum","Take it to the grave"],
-  ["Petty revenge","Psycho revenge"],["Normal body count","Concerning body count"],["Romantic","Creepy"],
-  ["Terrible reason to break up","Great reason to break up"],["Okay at a funeral","Not okay at a funeral"],
-  ["Bad excuse to skip sex","Valid excuse to skip sex"],["Deserves jail","Deserves a medal"],["Morally fine","Morally bankrupt"],
-  ["Ick","Rizz"],["Situationship","Relationship"],["Fine to do with your ex","Never do with your ex"]
-];
+const SPICY = [["Wholesome", "Freaky"], ["Vanilla", "Kinky"], ["Turn-on", "Instant turn-off"], ["Innocent", "Filthy"], ["Not cheating", "Cheating"], ["Hot place to hook up", "Terrible place to hook up"], ["Tame fantasy", "Wild fantasy"], ["Normal kink", "Concerning kink"], ["Sexy noise", "Unsexy noise"], ["First date", "Wait till the 10th date"], ["Normal sext", "Unhinged sext"], ["Okay to say in bed", "Never say in bed"], ["Sexy outfit", "Mood killer outfit"], ["Do it sober", "Only if blackout drunk"], ["Normal sex toy", "Terrifying sex toy"], ["Hookup material", "Marriage material"], ["Normal body count", "Concerning body count"], ["Overrated position", "Underrated position"], ["Sexy job", "Unsexy job"], ["Romantic", "Creepy"], ["Mild sin", "Straight to hell"], ["Tame bachelor party", "Unhinged bachelor party"], ["Classy", "Trashy"], ["Fine to post", "Keep it in the group chat"], ["Socially acceptable", "Gets you cancelled"], ["Ick", "Rizz"], ["Forgivable", "Unforgivable in a relationship"], ["Pathetic", "Hot"], ["Okay with friends watching", "Absolutely private"], ["Hot in theory", "Hot in practice"], ["Great pickup line", "Get slapped pickup line"], ["Morally fine", "Morally bankrupt"]];
 const TOTAL = 8;
 const BANDS = [[3,4],[8,3],[13,2]];   // within ±d → pts
 const pts = d => (BANDS.find(([w]) => d <= w) || [0,0])[1];
