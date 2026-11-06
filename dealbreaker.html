@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dealbreaker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1b1a1f; --panel:#25232b; --ink:#f4f1ea; --muted:#a39fae; --line:#3a3742;
+    --green:#3fbf7f; --greenBg:rgba(63,191,127,.12); --red:#ff5a4f; --redBg:rgba(255,90,79,.12);
+    --p1:#5b9bff; --p2:#ffb02e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Space Grotesk",system-ui,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:20px 16px 48px}
+  h1{font-size:30px;margin:0 0 4px;letter-spacing:-.5px}
+  h1 span{color:var(--red)}
+  .sub{color:var(--muted);margin:0 0 20px}
+  button{font:inherit;border:0;border-radius:10px;padding:11px 16px;font-weight:600;cursor:pointer;background:var(--ink);color:var(--bg)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  button.p1{background:var(--p1);color:#fff} button.p2{background:var(--p2);color:#1b1a1f}
+  button.small{padding:6px 10px;font-size:13px}
+  input{font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#15141a;color:var(--ink);width:160px}
+  .panel{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:20px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .landing{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .landing h2{margin:0 0 6px;font-size:19px}
+  .landing p{color:var(--muted);margin:0 0 14px;font-size:14px;line-height:1.45}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{border-radius:999px;padding:6px 12px;font-weight:600;font-size:14px;border:2px solid;background:transparent}
+  .chip.p1{color:var(--p1);border-color:var(--p1)} .chip.p2{color:var(--p2);border-color:var(--p2)}
+  .meta{color:var(--muted);font-size:14px}
+  .notice{background:#3a2f12;border:1.5px solid #7a6120;border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:14px}
+  .status{font-size:16px;line-height:1.45;margin-bottom:14px}
+  .dates{display:grid;gap:10px}
+  .date{display:flex;align-items:stretch;gap:0;border-radius:14px;border:2px solid var(--line);background:#1f1d24;text-align:left;padding:0;color:var(--ink);font-weight:500;width:100%;overflow:hidden}
+  .date.pick{cursor:pointer} .date.pick:hover{border-color:#5a5664}
+  .date.chosen{border-color:var(--ink)}
+  .rank{width:54px;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;border-right:2px solid var(--line);color:var(--muted)}
+  .date.chosen .rank{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .flags{flex:1;padding:12px 14px;display:grid;gap:6px}
+  .flag{display:flex;gap:8px;align-items:baseline;font-size:16px;line-height:1.3}
+  .flag i{font-style:normal;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:6px;flex:none}
+  .flag.g i{background:var(--greenBg);color:var(--green)} .flag.r i{background:var(--redBg);color:var(--red)}
+  .res{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 14px;font-size:13px;color:var(--muted);border-left:2px solid var(--line);min-width:96px}
+  .res b{font-size:18px}
+  .scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 2px 8px}
+  .big{font-size:34px;font-weight:700;letter-spacing:-1px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+  .cover{position:fixed;inset:0;background:#0e0d11;display:flex;align-items:center;justify-content:center;z-index:10;padding:20px;text-align:center}
+  .cover h2{font-size:30px;margin:0 0 10px} .cover p{color:var(--muted);margin:0 0 22px}
+  .hist{font-size:13px;color:var(--muted);width:100%;border-collapse:collapse;margin-top:6px}
+  .hist td{padding:4px 0;border-top:1px solid var(--line)} .hist td:last-child{text-align:right;color:var(--ink);font-weight:600}
+  a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const GREEN = ["Insanely hot","Rich","Amazing cook","Loyal to a fault","Genuinely funny","Emotionally mature","Has a golden retriever","Owns a house already","Gives great massages","6'2\"","Plays guitar for you","Remembers everything you say","Your parents love them","Great in a crisis","Always pays","Texts back instantly","Smells incredible","Fluent in 4 languages","Famous on TikTok","Plans perfect dates","Will travel anywhere","Super close with family","Fixes anything","Dresses really well","Gets along with your friends","Gym rat","Doctor","Writes you letters","Never gets jealous","Unbothered by drama"];
+const RED = ["Alcoholic","Still texts their ex","Chronic liar","Gambling problem","Rude to waiters","Owes everyone money","Crypto bro","Has cheated before","Jealous of your friends","Unemployed by choice","Chain smoker","Believes the earth is flat","Vapes indoors","Talks over you","Always 45 minutes late","Never washes their sheets","Mummy's boy / Daddy's girl","Posts everything on social media","Hates your best friend","Still lives with their parents at 35","Has 3 kids you didn't know about","Doesn't tip","Snores like a chainsaw","Into feet. Really into feet","Wants 8 kids","Reads your texts","Can't keep a plant alive, or a job","Bad hygiene","Calls all their exes crazy","Says 'I'm not like other people'"];
+const PER_ROUND = 5, TOTAL_ROUNDS = 6;
+const POS_PTS = [4, 2, 1, 0, 0];   // points by how far off your rank was
+const PERFECT_BONUS = 5;
+
+const app = document.getElementById('app');
+let mode = null, peer = null, conn = null, me1 = 0, room = '', loading = false;
+let state = null, pending = [], cover = 0, notice = '';
+const PREFIX = 'dealbreaker-v1-';
+const newCode = () => Array.from({length:5}, () => 'abcdefghjkmnpqrstuvwxyz23456789'[Math.floor(Math.random()*31)]).join('');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const other = n => n === 1 ? 2 : 1;
+
+function drawFrom(list, used){
+  let pool = list.filter(t => !used.includes(t));
+  if (!pool.length) { used.length = 0; pool = list.slice(); }
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  used.push(t); return t;
+}
+function deal(s){
+  s.cards = [];
+  for (let i = 0; i < PER_ROUND; i++) s.cards.push({ g: drawFrom(GREEN, s.used.g), r: drawFrom(RED, s.used.r) });
+  s.order = null; s.guess = null; s.last = null; s.phase = 'rank';
+}
+function freshState(){
+  const s = { round:1, total:TOTAL_ROUNDS, placer:1, phase:'lobby', cards:[], order:null, guess:null,
+    scores:{"1":0,"2":0}, last:null, used:{g:[],r:[]}, history:[] };
+  return s;
+}
+
+function myRole(){
+  if (!state) return 0;
+  if (mode === 'local') return state.phase === 'rank' ? state.placer : state.phase === 'guess' ? other(state.placer) : 0;
+  return me1;
+}
+
+/* ---------- sync ---------- */
+function commit(next){
+  state = next; pending = []; render();
+  if (mode === 'online') send();
+}
+function send(){
+  if (conn && conn.open) conn.send({ type:'state', state: clone(state) });
+  else { notice = "Not connected to the other player — this will sync when they reconnect."; render(); }
+}
+function wireConn(c){
+  conn = c;
+  c.on('open', () => {
+    notice = '';
+    if (me1 === 1) { if (state.phase === 'lobby') deal(state); send(); }
+    render();
+  });
+  c.on('data', msg => {
+    if (!msg || msg.type !== 'state' || typeof msg.state !== 'object') return;
+    const inc = msg.state;
+    if (!state || state.phase !== inc.phase || state.round !== inc.round) pending = [];
+    state = inc; loading = false; render();
+  });
+  c.on('close', () => {
+    if (conn !== c) return;
+    notice = me1 === 1 ? 'Player 2 disconnected. They can reopen the invite link to rejoin.' : 'Lost connection to Player 1. Reload to rejoin.';
+    render();
+  });
+}
+function startHost(){
+  if (!window.Peer) { notice = "Couldn't load the connection library — check your internet and reload."; render(); return; }
+  mode = 'online'; me1 = 1; room = newCode(); state = freshState(); loading = true; notice = ''; render();
+  peer = new Peer(PREFIX + room);
+  peer.on('open', () => { loading = false; render(); });
+  peer.on('connection', c => { if (conn && conn.open) { c.on('open', () => c.close()); return; } wireConn(c); });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch {} });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id') { peer.destroy(); startHost(); return; }
+    if (e.type === 'network' || e.type === 'server-error') { notice = 'Connection server unreachable. Check your internet and try again.'; render(); }
+  });
+}
+function startJoin(code){
+  code = (code || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!code) { notice = 'Enter the game code from Player 1.'; render(); return; }
+  if (!window.Peer) { notice = "Couldn't load the connection library — check your internet and reload."; render(); return; }
+  mode = 'online'; me1 = 2; room = code; state = null; loading = true; notice = ''; render();
+  peer = new Peer();
+  const timer = setTimeout(() => { if (loading) { notice = "Still can't reach Player 1. Check the code and that their page is still open."; render(); } }, 10000);
+  peer.on('open', () => wireConn(peer.connect(PREFIX + code, { reliable: true })));
+  peer.on('error', e => {
+    clearTimeout(timer);
+    if (e.type === 'peer-unavailable') { mode = null; loading = false; notice = `No game found with code "${code}".`; render(); }
+    else if (e.type === 'network' || e.type === 'server-error') { notice = 'Connection server unreachable.'; render(); }
+  });
+}
+function startLocal(){ mode = 'local'; state = freshState(); deal(state); cover = 1; notice = ''; render(); }
+
+/* ---------- actions ---------- */
+function actLock(){
+  if (pending.length !== PER_ROUND) return;
+  const s = clone(state);
+  if (s.phase === 'rank') {
+    s.order = pending.slice(); s.phase = 'guess';
+    if (mode === 'local') cover = other(s.placer);
+  } else if (s.phase === 'guess') {
+    s.guess = pending.slice();
+    const per = s.cards.map((_, i) => POS_PTS[Math.abs(s.order.indexOf(i) - s.guess.indexOf(i))] || 0);
+    const exact = per.every((p, i) => s.order.indexOf(i) === s.guess.indexOf(i));
+    const pts = per.reduce((a, b) => a + b, 0) + (exact ? PERFECT_BONUS : 0);
+    const g = other(s.placer);
+    s.scores[g] = (s.scores[g] || 0) + pts;
+    s.last = { pts, per, exact };
+    const top = s.cards[s.order[0]], bottom = s.cards[s.order[PER_ROUND - 1]];
+    s.history.push({ round: s.round, placer: s.placer, top: top.r, bottom: bottom.r, pts });
+    s.phase = 'reveal';
+  }
+  commit(s);
+}
+function actNext(){
+  const s = clone(state);
+  if (s.round >= s.total) { s.phase = 'over'; commit(s); return; }
+  s.round++; s.placer = other(s.placer); deal(s);
+  if (mode === 'local') cover = s.placer;
+  commit(s);
+}
+function actRestart(){
+  const s = freshState(); deal(s);
+  if (mode === 'local') cover = 1;
+  commit(s);
+}
+
+/* ---------- render ---------- */
+function header(){
+  return `<h1>Deal<span>breaker</span></h1><p class="sub">Five people, each with a green flag and a red flag. Rank who you'd date. Your friend guesses your ranking.</p>${notice ? `<div class="notice">${esc(notice)}</div>` : ''}`;
+}
+function render(){
+  if (!mode) return renderLanding();
+  if (mode === 'online' && loading) { app.innerHTML = header() + `<div class="panel">${me1 === 1 ? 'Setting up your game…' : `Connecting to game <b>${esc(room)}</b>…`}</div>`; return; }
+  if (mode === 'online' && (!state || state.phase === 'lobby')) return renderLobby();
+  renderGame(state);
+}
+function renderLanding(){
+  let j = ''; try { j = new URLSearchParams(location.search).get('join') || ''; } catch {}
+  app.innerHTML = header() + `
+    <div class="landing">
+      <div class="panel"><h2>Player 1</h2><p>Start a game and send the invite link to your friend.</p><button class="p1" data-act="host">Start a game</button></div>
+      <div class="panel"><h2>Player 2</h2><p>Open Player 1's invite link, or type their code.</p>
+        <div class="row"><input id="roomInput" value="${esc(j)}" placeholder="code" aria-label="Game code"><button class="p2" data-act="join">Join</button></div></div>
+      <div class="panel"><h2>One device</h2><p>Pass the phone back and forth. Answers get hidden before each handover.</p><button class="ghost" data-act="local">Play here</button></div>
+    </div>
+    <div class="panel" style="margin-top:16px"><p class="meta" style="margin:0;line-height:1.55">
+      <b style="color:var(--ink)">How to play.</b> Each round, 5 people get dealt — each one is a green flag + a red flag ("Rich, but alcoholic"). The hot-seat player secretly ranks them from <b style="color:var(--ink)">#1 date first</b> to <b style="color:var(--ink)">#5 absolutely not</b>. The other player ranks them the way they think their friend did. Per person: exact spot = 4 pts, one off = 2, two off = 1. Nail the whole order for +${PERFECT_BONUS} bonus. Swap every round, ${TOTAL_ROUNDS} rounds.</p></div>
+    <p class="meta" style="margin-top:16px">Also try <a href="./">Trait Plot</a>.</p>`;
+}
+function renderLobby(){
+  const link = location.href.split('?')[0].split('#')[0] + '?join=' + room;
+  app.innerHTML = header() + `
+    <div class="panel" style="max-width:520px;display:grid;gap:12px">
+      <div class="row" style="justify-content:space-between"><b style="color:var(--p1)">You are Player 1</b><button class="ghost small" data-act="leave">Cancel</button></div>
+      <div class="meta">Game code</div><div class="big" style="letter-spacing:4px">${esc(room)}</div>
+      <div class="meta">Send your friend this link:</div>
+      <div class="row"><input id="shareInput" readonly value="${esc(link)}" style="flex:1;min-width:0"><button class="small" data-act="copy">Copy</button></div>
+      <p class="meta" style="margin:0">Waiting for Player 2… keep this page open.</p>
+    </div>`;
+}
+
+function dateCard(c, i, opts){
+  const rankNum = opts.rank != null ? opts.rank + 1 : '';
+  const res = opts.res ? `<div class="res">${opts.res}</div>` : '';
+  return `<${opts.pick ? 'button' : 'div'} class="date ${opts.pick ? 'pick' : ''} ${rankNum ? 'chosen' : ''}" ${opts.pick ? `data-act="pick" data-i="${i}"` : ''}>
+    <div class="rank">${rankNum || '·'}</div>
+    <div class="flags"><div class="flag g"><i>Green</i><span>${esc(c.g)}</span></div><div class="flag r"><i>Red</i><span>${esc(c.r)}</span></div></div>${res}
+  </${opts.pick ? 'button' : 'div'}>`;
+}
+
+function renderGame(s){
+  const me = myRole(), placer = s.placer, guesser = other(placer);
+  const isPlacer = me === placer, isGuesser = me === guesser;
+
+  if (mode === 'local' && cover) {
+    const c = cover;
+    app.innerHTML = `<div class="cover"><div><h2 style="color:var(--p${c})">Pass to Player ${c}</h2>
+      <p>${c === placer ? `Player ${other(c)}, look away. Player ${c} is ranking.` : `Player ${other(c)}'s ranking is hidden. Your turn to guess it.`}</p>
+      <button class="p${c}" data-act="uncover">I'm Player ${c} — show me</button></div></div>`;
+    return;
+  }
+
+  let status = '', list = '', actions = '';
+  const picking = (s.phase === 'rank' && isPlacer) || (s.phase === 'guess' && isGuesser);
+  const scale = `<div class="scale"><span>#1 date first</span><span>#5 absolutely not</span></div>`;
+
+  if (s.phase === 'rank' || s.phase === 'guess') {
+    if (picking) {
+      status = s.phase === 'rank'
+        ? `Tap people in order, from who you'd <b>date first</b> to who's an <b>absolute no</b>. Player ${guesser} won't see this.`
+        : `How did <b>Player ${placer}</b> rank them? Tap in the order you think they chose.`;
+      // show cards in their original order, numbered by pending pick order
+      list = s.cards.map((c, i) => dateCard(c, i, { pick: true, rank: pending.includes(i) ? pending.indexOf(i) : null })).join('');
+      actions = `<button class="${s.phase === 'guess' ? 'p' + guesser : ''}" data-act="lock" ${pending.length === PER_ROUND ? '' : 'disabled'}>Lock in ${s.phase === 'rank' ? 'my ranking' : 'my guess'}</button>
+                 <button class="ghost" data-act="undo" ${pending.length ? '' : 'disabled'}>Undo</button>
+                 <span class="meta">${pending.length}/${PER_ROUND} ranked</span>`;
+    } else if (s.phase === 'guess' && isPlacer) {
+      status = `Your ranking is locked. Waiting for <b>Player ${guesser}</b> to guess it…`;
+      list = s.order.map((i, pos) => dateCard(s.cards[i], i, { rank: pos })).join('');
+    } else {
+      status = `<b>Player ${placer}</b> is secretly ranking these 5. Think about how they'd order them…`;
+      list = s.cards.map((c, i) => dateCard(c, i, {})).join('');
+    }
+  } else if (s.phase === 'reveal') {
+    status = `<div class="meta">Player ${guesser} scored</div><div class="big" style="color:var(--p${guesser})">+${s.last.pts} pts${s.last.exact ? ' · PERFECT' : ''}</div>`;
+    list = s.order.map((i, pos) => {
+      const gpos = s.guess.indexOf(i), p = s.last.per[i];
+      return dateCard(s.cards[i], i, { rank: pos, res: `<span>guessed</span><b style="color:${gpos === pos ? 'var(--green)' : 'var(--ink)'}">#${gpos + 1}</b><span>+${p}</span>` });
+    }).join('');
+    actions = `<button data-act="next">${s.round >= s.total ? 'See final score' : 'Next round — swap roles'}</button>`;
+  } else if (s.phase === 'over') {
+    const a = s.scores["1"] || 0, b = s.scores["2"] || 0;
+    status = `<div class="big">${a === b ? "It's a tie!" : `Player ${a > b ? 1 : 2} knows their friend better.`}</div><div class="meta">${a} – ${b}</div>`;
+    actions = `<button data-act="restart">Play again</button>`;
+  }
+
+  const chip = n => `<span class="chip p${n}">${mode === 'online' && me === n ? 'You (P' + n + ')' : 'P' + n}: ${s.scores[n] || 0}</span>`;
+  const hist = s.history.length ? `<div class="panel" style="margin-top:16px;padding:14px"><b style="font-size:14px">Rounds</b><table class="hist">${
+    s.history.map(h => `<tr><td>R${h.round} · P${h.placer} ranked · would date "${esc(h.top)}" over "${esc(h.bottom)}"</td><td>+${h.pts}</td></tr>`).join('')}</table></div>` : '';
+
+  app.innerHTML = header() + `
+    <div class="top"><div class="row">${chip(1)}${chip(2)}</div>
+      <div class="row"><span class="meta">${s.phase === 'over' ? 'Game over' : `Round ${s.round} of ${s.total}`}${mode === 'online' ? ' · ' + esc(room) : ''}</span>
+      <button class="ghost small" data-act="restartAsk">Restart</button><button class="ghost small" data-act="leave">Leave</button></div></div>
+    <div class="panel">
+      <div class="status">${status}</div>
+      ${list ? scale + `<div class="dates">${list}</div>` : ''}
+      ${actions ? `<div class="actions">${actions}</div>` : ''}
+    </div>${hist}`;
+}
+
+/* ---------- events ---------- */
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act;
+  if (a === 'host') startHost();
+  else if (a === 'join') startJoin(document.getElementById('roomInput')?.value);
+  else if (a === 'local') startLocal();
+  else if (a === 'pick') {
+    const i = +el.dataset.i, at = pending.indexOf(i);
+    if (at === -1) { if (pending.length < PER_ROUND) pending.push(i); }
+    else pending.splice(at, 1);
+    render();
+  }
+  else if (a === 'undo') { pending.pop(); render(); }
+  else if (a === 'lock') actLock();
+  else if (a === 'next') actNext();
+  else if (a === 'restart') actRestart();
+  else if (a === 'restartAsk') { if (el.dataset.sure) actRestart(); else { el.dataset.sure = '1'; el.textContent = 'Sure? Click again'; } }
+  else if (a === 'uncover') { cover = 0; render(); }
+  else if (a === 'copy') {
+    const inp = document.getElementById('shareInput');
+    const done = () => { el.textContent = 'Copied!'; };
+    try { navigator.clipboard.writeText(inp.value).then(done, () => { inp.select(); document.execCommand('copy'); done(); }); }
+    catch { inp.select(); try { document.execCommand('copy'); done(); } catch {} }
+  }
+  else if (a === 'leave') {
+    try { if (conn) conn.close(); if (peer) peer.destroy(); } catch {}
+    conn = peer = null; me1 = 0; mode = null; state = null; pending = []; notice = ''; render();
+  }
+});
+app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'roomInput') startJoin(e.target.value); });
+
+(() => {
+  let j = ''; try { j = new URLSearchParams(location.search).get('join') || ''; } catch {}
+  if (j) startJoin(j); else render();
+})();
+</script>
+</body>
+</html>
