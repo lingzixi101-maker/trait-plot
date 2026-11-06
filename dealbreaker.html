@@ -55,6 +55,14 @@
   .hist{font-size:13px;color:var(--muted);width:100%;border-collapse:collapse;margin-top:6px}
   .hist td{padding:4px 0;border-top:1px solid var(--line)} .hist td:last-child{text-align:right;color:var(--ink);font-weight:600}
   a{color:var(--muted)}
+
+  .spicy{display:flex;align-items:center;gap:12px;cursor:pointer;font-weight:600;user-select:none}
+  .spicy small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+  .spicy input{position:absolute;opacity:0;pointer-events:none}
+  .spicy .sw{width:46px;height:26px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .15s}
+  .spicy .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+  .spicy input:checked + .sw{background:#ff4d3d}
+  .spicy input:checked + .sw::after{transform:translateX(20px)}
 </style>
 </head>
 <body>
@@ -63,6 +71,10 @@
 <script>
 const GREEN = ["Insanely hot","Rich","Amazing cook","Loyal to a fault","Genuinely funny","Emotionally mature","Has a golden retriever","Owns a house already","Gives great massages","6'2\"","Plays guitar for you","Remembers everything you say","Your parents love them","Great in a crisis","Always pays","Texts back instantly","Smells incredible","Fluent in 4 languages","Famous on TikTok","Plans perfect dates","Will travel anywhere","Super close with family","Fixes anything","Dresses really well","Gets along with your friends","Gym rat","Doctor","Writes you letters","Never gets jealous","Unbothered by drama"];
 const RED = ["Alcoholic","Still texts their ex","Chronic liar","Gambling problem","Rude to waiters","Owes everyone money","Crypto bro","Has cheated before","Jealous of your friends","Unemployed by choice","Chain smoker","Believes the earth is flat","Vapes indoors","Talks over you","Always 45 minutes late","Never washes their sheets","Mummy's boy / Daddy's girl","Posts everything on social media","Hates your best friend","Still lives with their parents at 35","Has 3 kids you didn't know about","Doesn't tip","Snores like a chainsaw","Into feet. Really into feet","Wants 8 kids","Reads your texts","Can't keep a plant alive, or a job","Bad hygiene","Calls all their exes crazy","Says 'I'm not like other people'"];
+const RED_MILD = ["Chews loudly","Hates dogs","Always 20 minutes late","Terrible texter","Puts pineapple on pizza","Talks during movies","Obsessed with their car","Can't cook at all","Way too into astrology","Leaves dishes in the sink","Says 'LOL' out loud","Allergic to cats","Hogs the blanket","Only listens to one band","No sense of direction","Loud on the phone in public","Hates travelling","Wakes up at 5am. Happily","Collects anime figures","Spoils every show","Socks with sandals","Overshares on first dates","Hates your favourite food","Too competitive at board games","Owns 40 pairs of sneakers","Never replies to group chats","Cries at every ad","Dad jokes. Constantly","Posts gym selfies daily","Bad taste in movies"];
+const GREEN_S = GREEN.concat(["Incredible in bed","Best kisser of your life","Rich and generous with it","Down for anything"]);
+const RED_S = RED.concat(["Body count over 100","Has an OnlyFans","Still sleeps with their ex","Sends unsolicited pics","Moans their ex's name","Wants an open relationship","Bad in bed","Cheated on every partner","Wants to film everything","Kinky in a scary way"]);
+let spicyOn = false; try { spicyOn = localStorage.getItem('rmm-spicy') === '1'; } catch {}
 const PER_ROUND = 5, TOTAL_ROUNDS = 6;
 const POS_PTS = [4, 2, 1, 0, 0];   // points by how far off your rank was
 const PERFECT_BONUS = 5;
@@ -84,11 +96,11 @@ function drawFrom(list, used){
 }
 function deal(s){
   s.cards = [];
-  for (let i = 0; i < PER_ROUND; i++) s.cards.push({ g: drawFrom(GREEN, s.used.g), r: drawFrom(RED, s.used.r) });
+  for (let i = 0; i < PER_ROUND; i++) s.cards.push({ g: drawFrom(s.spicy ? GREEN_S : GREEN, s.used.g), r: drawFrom(s.spicy ? RED_S : RED_MILD, s.used.r) });
   s.order = null; s.guess = null; s.last = null; s.phase = 'rank';
 }
 function freshState(){
-  const s = { round:1, total:TOTAL_ROUNDS, placer:1, phase:'lobby', cards:[], order:null, guess:null,
+  const s = { spicy: state ? !!state.spicy : spicyOn, round:1, total:TOTAL_ROUNDS, placer:1, phase:'lobby', cards:[], order:null, guess:null,
     scores:{"1":0,"2":0}, last:null, used:{g:[],r:[]}, history:[] };
   return s;
 }
@@ -202,6 +214,7 @@ function render(){
 function renderLanding(){
   let j = ''; try { j = new URLSearchParams(location.search).get('join') || ''; } catch {}
   app.innerHTML = header() + `
+    <div class="panel" style="margin-bottom:16px"><label class="spicy"><input type="checkbox" data-act="spicy" ${spicyOn ? 'checked' : ''}><span class="sw"></span><span>Spicy mode <small>18+, raunchy and controversial cards</small></span></label></div>
     <div class="landing">
       <div class="panel"><h2>Player 1</h2><p>Start a game and send the invite link to your friend.</p><button class="p1" data-act="host">Start a game</button></div>
       <div class="panel"><h2>Player 2</h2><p>Open Player 1's invite link, or type their code.</p>
@@ -285,7 +298,7 @@ function renderGame(s){
 
   app.innerHTML = header() + `
     <div class="top"><div class="row">${chip(1)}${chip(2)}</div>
-      <div class="row"><span class="meta">${s.phase === 'over' ? 'Game over' : `Round ${s.round} of ${s.total}`}${mode === 'online' ? ' · ' + esc(room) : ''}</span>
+      <div class="row"><span class="meta">${s.phase === 'over' ? 'Game over' : `Round ${s.round} of ${s.total}`}${s.spicy ? ' · 🌶' : ''}${mode === 'online' ? ' · ' + esc(room) : ''}</span>
       <button class="ghost small" data-act="restartAsk">Restart</button><button class="ghost small" data-act="leave">Leave</button></div></div>
     <div class="panel">
       <div class="status">${status}</div>
@@ -298,6 +311,7 @@ function renderGame(s){
 app.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act;
+  if (a === 'spicy') { spicyOn = el.checked; try { localStorage.setItem('rmm-spicy', spicyOn ? '1' : '0'); } catch {} return; }
   if (a === 'host') startHost();
   else if (a === 'join') startJoin(document.getElementById('roomInput')?.value);
   else if (a === 'local') startLocal();

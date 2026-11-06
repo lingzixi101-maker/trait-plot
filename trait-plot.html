@@ -60,6 +60,14 @@
   .seat{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
   .seat:first-of-type{border-top:0}
   a.link{color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline}
+
+  .spicy{display:flex;align-items:center;gap:12px;cursor:pointer;font-weight:600;user-select:none}
+  .spicy small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+  .spicy input{position:absolute;opacity:0;pointer-events:none}
+  .spicy .sw{width:46px;height:26px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .15s}
+  .spicy .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+  .spicy input:checked + .sw{background:#ff4d3d}
+  .spicy input:checked + .sw::after{transform:translateX(20px)}
 </style>
 </head>
 <body>
@@ -69,7 +77,11 @@
 <script>
 const GOOD = ["Hardworking","Loyal","Kind","Honest","Funny","Patient","Generous","Curious","Brave","Organised","Optimistic","Humble","Reliable","Creative","Calm","Thoughtful","Ambitious","Confident","Empathetic","Adventurous","Disciplined","Supportive","Witty","Resourceful","Charming","Punctual","Open-minded","Diplomatic","Energetic","Forgiving"];
 const BAD  = ["Lazy","Rude","Stubborn","Impatient","Messy","Arrogant","Forgetful","Jealous","Indecisive","Dramatic","Nosy","Moody","Selfish","Impulsive","Sarcastic","Clumsy","Petty","Gullible","Flaky","Competitive","Bossy","Anxious","Picky","Gossipy","Lazy texter","Overthinker","Loud","Procrastinator","Easily bored","Cheap"];
+const GOOD_S = ["Good in bed","Great kisser","Hot","Flirty","Smooth talker","Down for anything","Confident naked","Fun drunk","Generous lover","Wild at parties","Has rizz","Loyal partner","Great at sexting","Adventurous in bed","Seductive","Never jealous","Great at dirty talk","Can hold their liquor","Good at aftercare","Irresistible"];
+const BAD_S  = ["Alcoholic","Toxic","Freaky","Promiscuous","Jealous","Messy drunk","Gold digger","Two-faced","Clingy","Ghoster","Simp","Thirsty","Cheater energy","Stalks their exes","Narcissist","Manipulative","Horny all the time","Liar","Commitment-phobe","Love-bomber","Attention seeker","Bad kisser","Emotionally unavailable","Toxic texter","Would sleep with an ex"];
 const TOTAL_ROUNDS = 6;
+let spicyOn = false; try { spicyOn = localStorage.getItem('rmm-spicy') === '1'; } catch {}
+
 
 const app = document.getElementById('app');
 let mode = null;          // 'online' | 'local'
@@ -84,7 +96,7 @@ const other = n => n === 1 ? 2 : 1;
 const cleanRoom = s => (s || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30) || 'main';
 
 function freshState(){
-  return { v:1, p1:null, p2:null, round:1, total:TOTAL_ROUNDS, placer:1, phase:'lobby',
+  return { spicy: state ? !!state.spicy : spicyOn, v:1, p1:null, p2:null, round:1, total:TOTAL_ROUNDS, placer:1, phase:'lobby',
     good:null, bad:null, place:null, guess:null, scores:{"1":0,"2":0}, last:null,
     used:{good:[],bad:[]}, history:[] };
 }
@@ -120,8 +132,8 @@ function drawFrom(list, used){
 }
 function actDraw(){
   const s = clone(state);
-  s.good = drawFrom(GOOD, s.used.good);
-  s.bad = drawFrom(BAD, s.used.bad);
+  s.good = drawFrom(s.spicy ? GOOD_S : GOOD, s.used.good);
+  s.bad = drawFrom(s.spicy ? BAD_S : BAD, s.used.bad);
   s.phase = 'place';
   commit(s);
 }
@@ -243,6 +255,7 @@ function header(){
 function renderLanding(){
   let j = ''; try { j = new URLSearchParams(location.search).get('join') || ''; } catch {}
   app.innerHTML = header() + `
+    <div class="panel" style="margin-bottom:16px"><label class="spicy"><input type="checkbox" data-act="spicy" ${spicyOn ? 'checked' : ''}><span class="sw"></span><span>Spicy mode <small>18+, raunchy and controversial cards</small></span></label></div>
     <div class="landing">
       <div class="panel">
         <h2>Player 1</h2>
@@ -346,7 +359,7 @@ function renderGame(s){
   app.innerHTML = header() + `
     <div class="top">
       <div class="score">${chip(1)}${chip(2)}</div>
-      <div class="row"><span class="meta">${s.phase === 'over' ? 'Game over' : `Round ${s.round} of ${s.total}`}${mode==='online' ? ` · room ${esc(room)}` : ''}</span>
+      <div class="row"><span class="meta">${s.phase === 'over' ? 'Game over' : `Round ${s.round} of ${s.total}`}${s.spicy ? ' · 🌶' : ''}${mode==='online' ? ` · room ${esc(room)}` : ''}</span>
         <button class="ghost small" data-act="reset">Restart</button><button class="ghost small" data-act="leave">Leave</button></div>
     </div>
     <div class="game">
@@ -403,6 +416,7 @@ app.addEventListener('click', e => {
   }
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act;
+  if (a === 'spicy') { spicyOn = el.checked; try { localStorage.setItem('rmm-spicy', spicyOn ? '1' : '0'); } catch {} return; }
   if (a === 'host') startHost();
   else if (a === 'join') startJoin(document.getElementById('roomInput')?.value);
   else if (a === 'local') { notice = ''; startLocal(); }

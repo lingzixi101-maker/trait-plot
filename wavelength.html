@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wavelength</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+  :root{--bg:#17132a;--panel:#211c3a;--field:#15112a;--ink:#f1edff;--muted:#a59ec7;--line:#3a3360;--accent:#b18cff;--p1:#5b9bff;--p2:#ffb02e}
+  h1 span{background:linear-gradient(90deg,#5ee7df,#b18cff,#ff7ab6);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .ends{display:flex;justify-content:space-between;gap:16px;font-weight:700;font-size:18px;margin-bottom:10px}
+  .ends span:last-child{text-align:right}
+  .bar{position:relative;height:84px;border-radius:14px;background:linear-gradient(90deg,#2bc4bb,#7b61ff,#ff5fa2);overflow:hidden;touch-action:none}
+  .bar.active{cursor:pointer}
+  .band{position:absolute;top:0;bottom:0}
+  .b2{background:rgba(255,255,255,.28)} .b3{background:rgba(255,255,255,.5)} .b4{background:#fff}
+  .bandlbl{position:absolute;bottom:4px;font-size:11px;font-weight:700;color:#17132a;transform:translateX(-50%)}
+  .needle{position:absolute;top:-4px;bottom:-4px;width:4px;margin-left:-2px;background:#17132a;border-radius:2px}
+  .needle::after{content:"";position:absolute;top:50%;left:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#17132a;border:3px solid #fff}
+  .clue{font-size:26px;font-weight:700;text-align:center;padding:16px;border-radius:14px;background:var(--field);border:1.5px dashed var(--line);margin:16px 0}
+  .clue small{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+  #clueInput{width:100%;font-size:18px}
+  .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="common.js"></script>
+<script>
+const MILD = [
+  ["Cold","Hot"],["Overrated","Underrated"],["Useless","Useful"],["Smells bad","Smells good"],["Normal pet","Weird pet"],
+  ["Hero","Villain"],["Basic","Unique"],["Snack","Meal"],["Cheap","Expensive"],["Bad movie","Good movie"],["Mainstream","Niche"],
+  ["Soft","Hard"],["Easy to do","Hard to do"],["Boring job","Dream job"],["Healthy","Unhealthy"],["Forgettable","Iconic"],
+  ["Underpaid","Overpaid"],["Guilty pleasure","Proud to love it"],["Introvert activity","Extrovert activity"],["Fragile","Indestructible"],
+  ["Kids' thing","Adults' thing"],["Overpriced","Worth every cent"],["Bad superpower","Great superpower"],["Low effort","High effort"],
+  ["Calm","Chaotic"],["Scary","Cute"],["Old-fashioned","Futuristic"],["Mid food","Elite food"],["Bad gift","Great gift"],["Normal hobby","Weird hobby"]
+];
+const SPICY = [
+  ["Wholesome","Freaky"],["Forgivable","Unforgivable in a relationship"],["Not cheating","Cheating"],["Vanilla","Kinky"],
+  ["Fine on a first date","Way too much on a first date"],["Tipsy","Blackout"],["Classy","Trashy"],["Green flag","Red flag"],
+  ["Socially acceptable","Gets you cancelled"],["Mild sin","Straight to hell"],["Turn-on","Instant turn-off"],
+  ["Ethical way to get rich","Evil way to get rich"],["Fine to post","Keep it in the group chat"],["Hookup material","Marriage material"],
+  ["Normal thing to sext","Unhinged thing to sext"],["Fine to lie about","Never okay to lie about"],["Fine at 25","Embarrassing at 35"],
+  ["Harmless crush","Emotional affair"],["Pathetic","Hot"],["Overrated in bed","Underrated in bed"],["Tell your mum","Take it to the grave"],
+  ["Petty revenge","Psycho revenge"],["Normal body count","Concerning body count"],["Romantic","Creepy"],
+  ["Terrible reason to break up","Great reason to break up"],["Okay at a funeral","Not okay at a funeral"],
+  ["Bad excuse to skip sex","Valid excuse to skip sex"],["Deserves jail","Deserves a medal"],["Morally fine","Morally bankrupt"],
+  ["Ick","Rizz"],["Situationship","Relationship"],["Fine to do with your ex","Never do with your ex"]
+];
+const TOTAL = 8;
+const BANDS = [[3,4],[8,3],[13,2]];   // within ±d → pts
+const pts = d => (BANDS.find(([w]) => d <= w) || [0,0])[1];
+const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+const RATING = t => t >= 26 ? 'Literally telepathic' : t >= 20 ? 'Same wavelength' : t >= 14 ? 'Pretty in sync' : t >= 8 ? 'Different radio stations' : 'Do you even know each other?';
+
+function bandsHTML(t){
+  return BANDS.slice().reverse().map(([w, p]) => {
+    const l = Math.max(0, t - w), r = Math.min(100, t + w);
+    return `<div class="band b${p}" style="left:${l}%;width:${r - l}%"></div>`;
+  }).join('') + `<span class="bandlbl" style="left:${t}%">4</span>`;
+}
+
+const game = TwoPlayer({
+  prefix: 'wavelength-v1-',
+  titleHTML: '<span>Wavelength</span>',
+  subtitle: 'One of you gives a clue. The other reads your mind. You win or lose together.',
+  howTo: `<b style="color:var(--ink)">How to play.</b> You're a team. Each round a scale comes up, like "Wholesome ↔ Freaky". The clue giver secretly sees a target zone on it and types <b style="color:var(--ink)">one clue</b>, a thing, person or situation that sits at that spot (e.g. "Sending a voice note at 3am"). The guesser moves the needle to where they think the target is, and you're allowed to argue out loud. Bullseye = 4, close = 3, near = 2. Swap clue giver every round, ${TOTAL} rounds, max ${TOTAL * 4}.`,
+  freshState: spicy => ({ round:1, total:TOTAL, placer:1, phase:'lobby', spicy, spec:null, target:null, clue:'', guess:null, team:0, last:null, used:[], history:[] }),
+  startRound: s => { s.spec = drawFrom(s.spicy ? SPICY : MILD, s.used); s.target = 4 + Math.floor(Math.random() * 93); s.clue = ''; s.guess = s.last = null; s.phase = 'clue'; },
+  localActor: s => s.phase === 'clue' ? s.placer : s.phase === 'guess' ? (s.placer === 1 ? 2 : 1) : 0,
+  coverText: (s, c) => c === s.placer ? `Player ${c === 1 ? 2 : 1}, look away. Player ${c} is seeing the target and writing a clue.` : `Player ${c === 1 ? 2 : 1}'s clue is ready. Take the phone and find the target.`,
+  render: ({ state: s, me, mode, S, esc, other, topbar }) => {
+    const giver = s.placer, guesser = other(giver);
+    const ends = `<div class="ends"><span>← ${esc(s.spec[0])}</span><span>${esc(s.spec[1])} →</span></div>`;
+    const bar = (opts) => `<div class="bar ${opts.active ? 'active' : ''}" id="bar">${opts.target != null ? bandsHTML(opts.target) : ''}${opts.needle != null ? `<div class="needle" id="needle" style="left:${opts.needle}%"></div>` : ''}</div>`;
+    const clueBox = s.clue ? `<div class="clue"><small>Clue from Player ${giver}</small>${esc(s.clue)}</div>` : '';
+    let body = '';
+    if (s.phase === 'clue') {
+      body = me === giver
+        ? `<div class="status">Only you can see the target. Type a clue that sits <b>right on the white zone</b>.</div>${ends}${bar({ target: s.target })}
+           <div class="actions"><input id="clueInput" maxlength="80" placeholder="Your clue, e.g. Texting your ex happy birthday" autocomplete="off"></div>
+           <div class="actions"><button data-act="sendClue">Send clue</button></div>`
+        : `<div class="status"><b>Player ${giver}</b> is looking at the target and thinking of a clue…</div>${ends}${bar({})}`;
+    } else if (s.phase === 'guess') {
+      body = me === guesser
+        ? `<div class="status">Where's the target? Tap or drag on the scale. Talk it out if you're together.</div>${clueBox}${ends}${bar({ active: true, needle: S.pending ?? 50 })}
+           <div class="actions"><button class="p${guesser}" data-act="lock">Lock it in</button></div>`
+        : `<div class="status">Waiting for <b>Player ${guesser}</b> to find it… no hints! (Well, maybe a few.)</div>${clueBox}${ends}${bar({ target: s.target })}`;
+    } else if (s.phase === 'reveal') {
+      body = `${clueBox}${ends}${bar({ target: s.target, needle: s.guess })}
+        <div style="text-align:center;margin-top:16px"><div class="big" style="color:var(--accent)">${s.last ? '+' + s.last + ' for the team' : 'Missed it'}</div>
+        <div class="meta">Off by ${Math.abs(s.guess - s.target)}</div></div>
+        <div class="actions" style="justify-content:center"><button data-act="next">${s.round >= s.total ? 'See final score' : 'Next round, swap clue giver'}</button></div>`;
+    } else if (s.phase === 'over') {
+      body = `<div class="meta">Team score</div><div class="big">${s.team} / ${s.total * 4}</div><div class="status" style="margin-top:6px">${RATING(s.team)}</div>
+        <div class="actions"><button data-act="restartAsk" data-sure="1">Play again</button></div>`;
+    }
+    const hist = s.history.length ? `<div class="panel" style="margin-top:16px;padding:14px"><b style="font-size:14px">Rounds</b><table class="hist">${
+      s.history.map(h => `<tr><td>${esc(h.spec[0])} ↔ ${esc(h.spec[1])}: "${esc(h.clue)}" (P${h.giver})</td><td>+${h.pts}</td></tr>`).join('')}</table></div>` : '';
+    return topbar(`<span class="chip team">Team: ${s.team}</span>${mode === 'online' ? `<span class="meta">You're Player ${me}</span>` : ''}`) + `<div class="panel">${body}</div>` + hist;
+  },
+  afterRender: () => {
+    const ci = document.getElementById('clueInput');
+    if (ci) { ci.focus(); ci.addEventListener('keydown', e => { if (e.key === 'Enter') document.querySelector('[data-act=sendClue]').click(); }); }
+    const bar = document.getElementById('bar');
+    if (!bar || !bar.classList.contains('active')) return;
+    if (game.S.pending == null) game.S.pending = 50;
+    const set = e => {
+      const r = bar.getBoundingClientRect();
+      game.S.pending = clamp((e.clientX - r.left) / r.width * 100);
+      document.getElementById('needle').style.left = game.S.pending + '%';
+    };
+    let down = false;
+    bar.addEventListener('pointerdown', e => { down = true; try { bar.setPointerCapture(e.pointerId); } catch {} set(e); });
+    bar.addEventListener('pointermove', e => { if (down) set(e); });
+    bar.addEventListener('pointerup', () => { down = false; });
+    bar.addEventListener('click', set);
+  },
+  onAction: (a, el, { S, commit, clone, other }) => {
+    if (a === 'sendClue') {
+      const v = (document.getElementById('clueInput')?.value || '').trim();
+      if (!v) { document.getElementById('clueInput').focus(); return; }
+      const s = clone(S.state); s.clue = v.slice(0, 80); s.phase = 'guess';
+      commit(s, { cover: other(s.placer) });
+    }
+    else if (a === 'lock') {
+      const s = clone(S.state); s.guess = S.pending ?? 50;
+      s.last = pts(Math.abs(s.guess - s.target)); s.team += s.last;
+      s.history.push({ spec: s.spec, clue: s.clue, giver: s.placer, pts: s.last });
+      s.phase = 'reveal'; commit(s);
+    }
+    else if (a === 'next') {
+      const s = clone(S.state);
+      if (s.round >= s.total) { s.phase = 'over'; commit(s); return; }
+      s.round++; s.placer = other(s.placer);
+      s.spec = drawFrom(s.spicy ? SPICY : MILD, s.used); s.target = 4 + Math.floor(Math.random() * 93); s.clue = ''; s.guess = s.last = null; s.phase = 'clue';
+      commit(s, { cover: s.placer });
+    }
+  }
+});
+</script>
+</body>
+</html>

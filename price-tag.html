@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Price Tag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+  :root{--bg:#eef3ea;--panel:#fffffb;--field:#fff;--ink:#16241a;--muted:#5f6f63;--line:#cfdcca;--accent:#1f8f4e;--p1:#2f6fd6;--p2:#d98a12}
+  h1 span{color:var(--accent)}
+  .card{background:var(--ink);color:#f3f8ef;position:relative;margin-bottom:18px}
+  .card .tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:6px}
+  .money{font-size:44px;font-weight:700;letter-spacing:-1.5px;text-align:center;margin:6px 0 2px;color:var(--accent)}
+  .money.never{color:#d4483f}
+  .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+  .presets button{padding:6px 10px;font-size:13px;background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center}
+  .vs .lbl{font-size:13px;color:var(--muted)}
+  .vs .amt{font-size:28px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="common.js"></script>
+<script>
+const MILD = [
+  "Shave your head bald", "Delete Instagram for a year", "Eat a raw onion like an apple", "No phone for a whole month",
+  "Wear the same outfit every day for 30 days", "Live in Antarctica for a year", "Never eat rice again",
+  "Give up coffee and bubble tea for a year", "Sing a solo at karaoke, sober, to a packed bar", "Get your best friend's name tattooed",
+  "Eat a full spoon of wasabi", "Swim with sharks (in a cage)", "Never use Google again", "Spend a night alone in a 'haunted' house",
+  "Quit all social media forever", "Move back in with your parents for 2 years", "Only eat McDonald's for a month",
+  "Run a full marathon next week", "Never travel outside your country again", "Wear Crocs to every formal event for life",
+  "Speak only in rhymes for a whole day at work", "Give up air-conditioning forever", "Let your mum pick your outfits for a year",
+  "Eat a live cricket", "Text 'I miss you' to your 5th most recent contact", "Never watch TV or movies again",
+  "Give a TED talk on a topic you know nothing about", "Live without internet for 6 months", "Eat only food your enemy cooks for a week",
+  "Go viral for something embarrassing"
+];
+const SPICY = [
+  "Let your parents read your entire search history", "Post your Notes app on your Instagram story", "Never have sex again",
+  "Only have sex once a year, forever", "Read your old sexts aloud at a family dinner", "Lick a public toilet seat",
+  "Hook up with your boss", "Start an OnlyFans with your face on it", "Tell your parents your real body count",
+  "Text your ex 'I still think about you at night'", "Let your partner go through your phone every day for a year",
+  "Get your ex's name tattooed on your butt", "Go a month without underwear, including to work", "Swap phones with your mum for a week",
+  "Date someone you're not attracted to for a year", "Make out with a stranger in front of your parents", "Spend a night in jail",
+  "Down a full bottle of vodka", "Let your ex choose your next partner", "Sleep with someone 30 years older than you",
+  "Have your browser history projected at your graduation", "Strip at a bachelor/ette party", "Send a nude to your group chat by accident",
+  "Be single for 5 years", "Drink a shot of your own sweat", "Let your mum write your dating profile",
+  "Kiss your best friend's partner (they're fine with it)", "Get caught in the act by your roommate, on purpose",
+  "Leave a 1-minute moaning voice note to your boss", "Have a threesome with your two most recent exes",
+  "Never orgasm again", "Let your friends read your DMs with your crush", "Confess every lie you've told your partner"
+];
+const TOTAL = 6;
+
+/* slider 0..1000 <-> dollars. 0 = free, 1000 = no amount of money, between = log scale $1..$100M */
+const NEVER = -1;
+function sliderToAmt(v){
+  v = +v; if (v <= 0) return 0; if (v >= 1000) return NEVER;
+  const raw = Math.pow(10, (v - 1) / 998 * 8);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
+  return Math.max(1, Math.round(raw / mag) * mag);
+}
+function amtToSlider(a){ if (a === 0) return 0; if (a === NEVER) return 1000; return Math.round(1 + Math.log10(a) / 8 * 998); }
+function fmt(a){
+  if (a === NEVER) return 'Not for any money';
+  if (a === 0) return 'I\'d do it for free';
+  if (a < 1e3) return '$' + a;
+  if (a < 1e6) return '$' + +(a / 1e3).toPrecision(3) + 'k';
+  return '$' + +(a / 1e6).toPrecision(3) + 'M';
+}
+function score(a, b){
+  if (a === NEVER || b === NEVER) return a === b ? 100 : 0;
+  const d = Math.abs(Math.log10(a + 1) - Math.log10(b + 1));
+  return Math.max(0, Math.round(100 - 40 * d));
+}
+
+const game = TwoPlayer({
+  prefix: 'pricetag-v1-',
+  titleHTML: 'Price <span>Tag</span>',
+  subtitle: 'Everyone has a price. Does your friend know yours?',
+  howTo: `<b style="color:var(--ink)">How to play.</b> A dare comes up. The hot-seat player secretly sets the lowest amount of money they'd need to do it, anywhere from free to "not for any money". The other player guesses the amount. Scoring compares guesses by ratio, so $1k vs $2k counts as close as $1M vs $2M. Exact = 100, 2× off ≈ 88, 10× off = 60, 100× off = 20. Swap every round, ${TOTAL} rounds.`,
+  freshState: spicy => ({ round:1, total:TOTAL, placer:1, phase:'lobby', spicy, dare:null, price:null, guess:null, scores:{"1":0,"2":0}, last:null, used:[], history:[] }),
+  startRound: s => { s.dare = drawFrom(s.spicy ? SPICY : MILD, s.used); s.price = s.guess = s.last = null; s.phase = 'price'; },
+  localActor: s => s.phase === 'price' ? s.placer : s.phase === 'guess' ? (s.placer === 1 ? 2 : 1) : 0,
+  coverText: (s, c) => c === s.placer ? `Player ${c === 1 ? 2 : 1}, look away. Player ${c} is naming their price.` : `Player ${c === 1 ? 2 : 1}'s price is hidden. Time to guess it.`,
+  render: ({ state: s, me, mode, S, esc, other, topbar }) => {
+    const placer = s.placer, guesser = other(placer);
+    const card = `<div class="card"><span class="tag">How much to…</span>${esc(s.dare || '')}</div>`;
+    const slider = (label, btnClass) => {
+      const amt = S.pending ?? 1e4;
+      return `<div class="money ${amt === NEVER ? 'never' : ''}" id="moneyOut">${fmt(amt)}</div>
+        <input type="range" id="slider" min="0" max="1000" step="1" value="${amtToSlider(amt)}" aria-label="Amount">
+        <div class="ends"><span>Free</span><span>$100M</span><span>Never</span></div>
+        <div class="presets">${[0,100,1e3,1e4,1e5,1e6,1e7,NEVER].map(v => `<button data-act="preset" data-v="${v}">${v === NEVER ? 'Never' : v === 0 ? 'Free' : fmt(v)}</button>`).join('')}</div>
+        <div class="actions"><button class="${btnClass}" data-act="lock" ${S.pending == null ? 'disabled' : ''}>${label}</button>${S.pending == null ? '<span class="meta">Move the slider or tap a preset</span>' : ''}</div>`;
+    };
+    let body = '';
+    if (s.phase === 'price') {
+      body = me === placer
+        ? `<div class="status">What's the <b>lowest</b> you'd take to do this? Player ${guesser} won't see it.</div>${card}${slider('Lock in my price', '')}`
+        : `<div class="status"><b>Player ${placer}</b> is naming their price… think about what they'd say.</div>${card}`;
+    } else if (s.phase === 'guess') {
+      body = me === guesser
+        ? `<div class="status">What's <b>Player ${placer}</b>'s price?</div>${card}${slider('Lock in my guess', 'p' + guesser)}`
+        : `<div class="status">Your price is locked at <b>${fmt(s.price)}</b>. Waiting for Player ${guesser} to guess…</div>${card}`;
+    } else if (s.phase === 'reveal') {
+      body = `${card}<div class="vs">
+          <div><div class="lbl">Player ${placer}'s price</div><div class="amt" style="color:var(--p${placer})">${fmt(s.price)}</div></div>
+          <div><div class="lbl">Player ${guesser}'s guess</div><div class="amt" style="color:var(--p${guesser})">${fmt(s.guess)}</div></div></div>
+        <div style="text-align:center;margin-top:14px"><div class="big" style="color:var(--p${guesser})">+${s.last} pts</div></div>
+        <div class="actions" style="justify-content:center"><button data-act="next">${s.round >= s.total ? 'See final score' : 'Next round, swap roles'}</button></div>`;
+    } else if (s.phase === 'over') {
+      const a = s.scores["1"], b = s.scores["2"];
+      body = `<div class="big">${a === b ? "It's a tie!" : `Player ${a > b ? 1 : 2} knows their friend's price.`}</div><div class="meta">${a} – ${b}</div>
+        <div class="actions"><button data-act="restartAsk" data-sure="1">Play again</button></div>`;
+    }
+    const chip = n => `<span class="chip p${n}">${mode === 'online' && me === n ? 'You (P' + n + ')' : 'P' + n}: ${s.scores[n] || 0}</span>`;
+    const hist = s.history.length ? `<div class="panel" style="margin-top:16px;padding:14px"><b style="font-size:14px">Rounds</b><table class="hist">${
+      s.history.map(h => `<tr><td>P${h.placer}: "${esc(h.dare)}" → ${fmt(h.price)} (guess ${fmt(h.guess)})</td><td>+${h.pts}</td></tr>`).join('')}</table></div>` : '';
+    return topbar(chip(1) + chip(2)) + `<div class="panel">${body}</div>` + hist;
+  },
+  afterRender: () => {
+    const sl = document.getElementById('slider'); if (!sl) return;
+    sl.addEventListener('input', () => {
+      game.S.pending = sliderToAmt(sl.value);
+      const out = document.getElementById('moneyOut');
+      out.textContent = fmt(game.S.pending); out.classList.toggle('never', game.S.pending === NEVER);
+      const btn = document.querySelector('[data-act=lock]'); if (btn) btn.disabled = false;
+      const hint = btn && btn.nextElementSibling; if (hint) hint.remove();
+    });
+  },
+  onAction: (a, el, { S, commit, clone, other }) => {
+    if (a === 'preset') { S.pending = +el.dataset.v; game.render(); }
+    else if (a === 'lock' && S.pending != null) {
+      const s = clone(S.state);
+      if (s.phase === 'price') { s.price = S.pending; s.phase = 'guess'; commit(s, { cover: other(s.placer) }); }
+      else if (s.phase === 'guess') {
+        s.guess = S.pending; s.last = score(s.price, s.guess);
+        const g = other(s.placer); s.scores[g] += s.last;
+        s.history.push({ placer: s.placer, dare: s.dare, price: s.price, guess: s.guess, pts: s.last });
+        s.phase = 'reveal'; commit(s);
+      }
+    }
+    else if (a === 'next') {
+      const s = clone(S.state);
+      if (s.round >= s.total) { s.phase = 'over'; commit(s); return; }
+      s.round++; s.placer = other(s.placer);
+      s.dare = drawFrom(s.spicy ? SPICY : MILD, s.used); s.price = s.guess = s.last = null; s.phase = 'price';
+      commit(s, { cover: s.placer });
+    }
+  }
+});
+</script>
+</body>
+</html>
