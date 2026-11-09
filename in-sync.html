@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>In Sync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+  :root{--bg:#fbeff0;--panel:#fffafa;--field:#fff;--ink:#3a1520;--muted:#8c6670;--line:#efd3d8;--accent:#e0496e;--p1:#e0496e;--p2:#7a5cff}
+  h1 span{color:var(--accent)}
+  .q{font-size:24px;font-weight:700;line-height:1.25;letter-spacing:-.3px;margin:4px 0 18px}
+  .kind{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:6px;background:#fde1e7;color:var(--accent)}
+  .kind.talk{background:#ece6ff;color:#5b3fe0}
+  .kind.spicy{background:#3a1520;color:#ffb3c4}
+  .sec{margin-top:14px} .sec h3{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opt{background:#fff;color:var(--ink);border:1.5px solid var(--line);font-weight:600;padding:10px 14px}
+  .opt.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .opt.on.g{background:var(--p2);border-color:var(--p2)}
+  .scale-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+  .scale .opt{flex:1;min-width:44px;text-align:center}
+  .res{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+  @media (max-width:560px){.res{grid-template-columns:1fr}}
+  .who{border:1.5px solid var(--line);border-radius:14px;padding:14px;background:#fff}
+  .who b{display:block;font-size:18px;margin:2px 0 8px}
+  .who .line{font-size:14px;color:var(--muted)} .who .line span{color:var(--ink);font-weight:600}
+  .hit{color:#1f8f4e;font-weight:700} .miss{color:var(--accent);font-weight:700}
+  .talkbox{margin-top:16px;padding:16px;border-radius:14px;background:#ece6ff;color:#2b1a6b}
+  .talkbox small{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;color:#5b3fe0}
+  .talkbox div{font-size:18px;font-weight:600;line-height:1.35}
+  .done{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="common.js"></script>
+<script>
+const MC = (q, opts, f) => ({ t:'mc', q, opts, f });
+const SC = (q, l, r, f) => ({ t:'sc', q, l, r, f });
+const TALK = q => ({ t:'talk', q });
+
+const MILD = [
+  MC("What's my love language?", ["Words","Quality time","Gifts","Touch","Acts of service"], "Show me the last time you felt this from me."),
+  MC("My ideal date night:", ["Fancy dinner","Movie at home","An adventure","Street food walk","Doing nothing in bed"], "Plan our next one right now."),
+  SC("How jealous do I get?", "Not at all", "Very", "What actually triggers it?"),
+  MC("If there was a fire (everyone's safe), I'd grab…", ["Phone","Laptop","Something sentimental","Passport","Snacks"]),
+  SC("How much alone time do I need?", "None", "A lot", "How do you want me to give you space?"),
+  MC("When we fight, I usually…", ["Need space first","Want to talk now","Go quiet","Get loud","Pretend I'm fine"], "What do you wish I did in that moment?"),
+  SC("How much do I like PDA?", "Hate it", "Love it"),
+  MC("In 10 years I'd want us to live…", ["Big city","Suburbs","Abroad","Countryside","Wherever you are"], "What's pulling you there?"),
+  MC("When I'm stressed, I want you to…", ["Give advice","Just listen","Distract me","Hold me","Give me space"], "What's the worst thing I could do instead?"),
+  SC("How much do I want kids?", "Never", "Definitely", "Has this changed since we met?"),
+  MC("Our dream holiday:", ["Beach resort","City hopping","Hiking & nature","Food trip","Road trip"]),
+  MC("Who's more likely to apologise first?", ["Me","You"], "Is that fair? Should it change?"),
+  MC("Who's the better cook?", ["Me","You","Equally bad"]),
+  SC("How important is money in a relationship?", "Not at all", "Very", "What's one money thing we've never talked about?"),
+  MC("With a surprise $10k I'd…", ["Travel","Save or invest","Go shopping","Treat family","Spend it on us"]),
+  MC("My most annoying habit:", ["Snoring","Overthinking","Doom-scrolling","Being late","Leaving stuff everywhere"], "Okay, which one is it really?"),
+  SC("How often do I want to hang out with your friends?", "Rarely", "All the time"),
+  MC("When did I know I liked you?", ["First meeting","First date","After a few weeks","Took months","Still deciding 😏"], "Tell the story of that moment."),
+  SC("How much do I think about our future?", "Barely", "Constantly", "What's one thing you picture?"),
+  MC("What makes me cry fastest?", ["Sad movies","Animal videos","Being yelled at","Missing home","Happy surprises"]),
+  MC("My comfort food after a bad day:", ["Fast food","Instant noodles","Dessert","Home-cooked","Bubble tea"]),
+  SC("How messy am I, honestly?", "Spotless", "Disaster"),
+  MC("Who's more stubborn?", ["Me","You","Tie"], "Give one example. Keep it friendly."),
+  SC("How much do I enjoy surprises?", "Hate them", "Love them"),
+  MC("For our anniversary I'd want…", ["A thoughtful gift","Fancy dinner","A trip away","A handwritten letter","Just time together"]),
+  MC("What scares me most about the future?", ["Money","Career","Health","Distance","Losing people"], "What would make it feel less scary?"),
+  SC("How comfortable am I sharing my feelings?", "Very hard", "Super easy", "What makes it easier with me?")
+];
+const MILD_TALK = [
+  "What's a small thing I do that makes you feel loved?", "What's one thing you wish we did more often?",
+  "Describe the moment you knew this was serious.", "What's something you've never told me but want to?",
+  "What's one fear you have about us? Be honest.", "Plan our perfect day together, hour by hour.",
+  "What's one habit of mine you secretly love?", "What did you think of me the first time we met?",
+  "What's something we argue about that isn't really about that thing?", "Where do you see us in 5 years?",
+  "What's one thing I could do this week to make you happier?", "Rate how we handled our last fight out of 10. Why?"
+].map(TALK);
+const SPICY = [
+  MC("My biggest turn-on:", ["Confidence","Being teased","A good outfit","Dirty talk","You taking charge"], "Show, don't tell. Later."),
+  SC("How adventurous am I in bed?", "Keep it classic", "Try anything", "Name one thing you'd try."),
+  MC("Best time of day for it?", ["Morning","Afternoon","Late night","Whenever","Middle of the night"]),
+  MC("I'd most want to try…", ["Roleplay","Blindfolds","Somewhere risky","A new position","Toys"], "Okay, when?"),
+  SC("How much do I like dirty talk?", "Cringe", "Obsessed", "Give an example. Out loud."),
+  MC("My favourite part of your body:", ["Eyes","Lips","Hands","Butt","Chest"]),
+  MC("The outfit that drives me crazy on you:", ["All dressed up","Underwear","Gym clothes","My clothes on you","Nothing"]),
+  SC("In a perfect world, how often would I want it?", "Once a week", "Every day", "What gets in the way?"),
+  MC("Who usually makes the first move?", ["Me","You","About equal"], "Do you want that to change?"),
+  MC("The riskiest place I'd do it:", ["Car","Beach","Hotel balcony","Public bathroom","Nowhere, thanks"]),
+  SC("How much do I like being in control?", "You lead", "I lead", "Want to swap sometimes?"),
+  MC("My ideal foreplay:", ["Kissing","Massage","Teasing over text","Undressing slowly","Skip it"]),
+  SC("How vocal am I in bed?", "Silent", "Neighbours know"),
+  MC("What I want more of:", ["Foreplay","Spontaneity","Talking about it","Variety","Cuddling after"], "How can we make that happen this week?"),
+  MC("Lights on or off?", ["On","Off","Dim","Candles"]),
+  SC("How into kissing am I?", "Meh", "Could do it for hours")
+];
+const SPICY_TALK = [
+  "Describe your favourite memory of us in bed.", "What's a fantasy you've never told me?",
+  "Tell me exactly how you'd want tonight to go.", "What's one thing I do that drives you wild?",
+  "What's something you'd like us to try together?", "When do you find me most attractive?",
+  "What's the hottest text I've ever sent you, or the one you want me to send?", "What's one thing you want more of between the sheets?"
+].map(TALK);
+const GENERIC_F = ["Why did you guess that?", "Tell the story behind your answer.", "Has this changed since we met?", "What would surprise your partner about this?"];
+const ROUNDS = 10;
+
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function buildDeck(spicy){
+  const q = spicy ? shuffle(SPICY).slice(0, 5).concat(shuffle(MILD).slice(0, 2)) : shuffle(MILD).slice(0, 7);
+  const t = spicy ? shuffle(SPICY_TALK).slice(0, 2).concat(shuffle(MILD_TALK).slice(0, 1)) : shuffle(MILD_TALK).slice(0, 3);
+  const qs = shuffle(q), ts = shuffle(t), deck = [];
+  for (let i = 0; i < ROUNDS; i++) deck.push((i % 3 === 2 && ts.length) ? ts.shift() : qs.shift());
+  return deck;
+}
+const other = n => n === 1 ? 2 : 1;
+const label = (c, v) => v == null ? '?' : c.t === 'mc' ? c.opts[v] : `${v}/5`;
+function pts(c, guess, actual){
+  if (guess == null || actual == null) return 0;
+  if (c.t === 'mc') return guess === actual ? 2 : 0;
+  const d = Math.abs(guess - actual); return d === 0 ? 2 : d === 1 ? 1 : 0;
+}
+function totals(s){
+  const t = { 1:0, 2:0 };
+  Object.entries(s.res || {}).forEach(([r, a]) => {
+    const c = s.deck[r - 1]; if (!c || c.t === 'talk' || !a[1] || !a[2]) return;
+    t[1] += pts(c, a[1].guess, a[2].self); t[2] += pts(c, a[2].guess, a[1].self);
+  });
+  return t;
+}
+const maxPts = s => s.deck.filter(c => c.t !== 'talk').length * 4;
+const bothIn = (s, r) => s.res[r] && s.res[r][1] && s.res[r][2];
+
+const game = TwoPlayer({
+  prefix: 'insync-v1-',
+  titleHTML: 'In <span>Sync</span>',
+  subtitle: 'A game for couples. Answer for yourself, guess your partner, then talk about every miss.',
+  howTo: `<b style="color:var(--ink)">How to play.</b> Each card, you both answer at the same time: once for <b style="color:var(--ink)">yourself</b>, and once as a <b style="color:var(--ink)">guess for your partner</b>. Then you see both answers side by side. Get your partner right for 2 points (1 if you're one off on a scale). When someone guesses wrong, a "talk about it" question comes up. Every third card is a conversation card with no points, just a question to answer out loud. ${ROUNDS} cards, and your scores add up to one couple score. Spicy mode swaps in bedroom questions.`,
+  freshState: spicy => ({ id: Math.random().toString(36).slice(2), round:1, total:ROUNDS, placer:1, phase:'lobby', spicy, deck:[], res:{}, talked:{} }),
+  startRound: s => { if (!s.deck.length) s.deck = buildDeck(s.spicy); s.phase = 'play'; },
+  localActor: s => {
+    if (s.phase !== 'play') return 0;
+    const c = s.deck[s.round - 1]; if (c.t === 'talk') return 0;
+    const a = s.res[s.round] || {};
+    return !a[1] ? 1 : !a[2] ? 2 : 0;
+  },
+  coverText: (s, c) => `Player ${other(c)} has answered and it's hidden. Your turn.`,
+  // both players act at once, so merge answers instead of overwriting
+  merge: (a, b) => {
+    if (a.id !== b.id) return b;
+    const m = JSON.parse(JSON.stringify(a.round >= b.round ? a : b));
+    const lo = a.round >= b.round ? b : a;
+    for (const r of Object.keys(lo.res || {})) m.res[r] = Object.assign({}, lo.res[r], m.res[r]);
+    m.talked = Object.assign({}, lo.talked, m.talked);
+    if (a.phase === 'over' || b.phase === 'over') m.phase = 'over';
+    return m;
+  },
+  render: ({ state: s, me, mode, S, esc, topbar }) => {
+    const t = totals(s), couple = t[1] + t[2];
+    const chips = `<span class="chip team">Couple score: ${couple}</span><span class="chip p1">${mode === 'online' && me === 1 ? 'You' : 'P1'}: ${t[1]}</span><span class="chip p2">${mode === 'online' && me === 2 ? 'You' : 'P2'}: ${t[2]}</span>`;
+    if (s.phase === 'over') {
+      const max = maxPts(s), pct = Math.round(couple / max * 100);
+      const verdict = pct >= 80 ? 'Basically the same person.' : pct >= 60 ? 'Very in sync.' : pct >= 40 ? 'Getting there. Lots to talk about!' : 'Strangers who share a bed. Play again 😅';
+      return topbar(chips) + `<div class="panel"><div class="meta">Couple score</div><div class="big">${couple} / ${max}</div>
+        <div class="status" style="margin-top:6px">${verdict}</div>
+        <div class="meta">Player 1 read Player 2 for ${t[1]} pts · Player 2 read Player 1 for ${t[2]} pts</div>
+        <div class="actions"><button data-act="restartAsk" data-sure="1">Play again with new cards</button></div></div>`;
+    }
+    const c = s.deck[s.round - 1], a = s.res[s.round] || {};
+    const isSpicyCard = SPICY.some(x => x.q === c.q) || SPICY_TALK.some(x => x.q === c.q);
+    const tag = c.t === 'talk' ? `<span class="kind talk">Conversation card</span>` : `<span class="kind ${isSpicyCard ? 'spicy' : ''}">${isSpicyCard ? '🌶 Spicy' : c.t === 'mc' ? 'Pick one' : 'Scale 1–5'}</span>`;
+    const nextBtn = `<div class="actions"><button data-act="next">${s.round >= s.total ? 'See our score' : 'Next card'}</button></div>`;
+
+    if (c.t === 'talk') {
+      return topbar(chips) + `<div class="panel">${tag}<div class="q">${esc(c.q)}</div>
+        <div class="meta">Both of you answer out loud, no points. Take your time.</div>${nextBtn}</div>`;
+    }
+    if (bothIn(s, s.round)) {
+      const row = (p) => {
+        const q = other(p), hit = pts(c, a[p].guess, a[q].self);
+        return `<div class="who"><div class="line">Player ${p}</div><b style="color:var(--p${p})">${esc(label(c, a[p].self))}</b>
+          <div class="line">Player ${q} guessed: <span>${esc(label(c, a[q].guess))}</span> ${pts(c, a[q].guess, a[p].self) ? `<span class="hit">+${pts(c, a[q].guess, a[p].self)}</span>` : `<span class="miss">missed</span>`}</div></div>`;
+      };
+      const missed = pts(c, a[1].guess, a[2].self) < 2 || pts(c, a[2].guess, a[1].self) < 2;
+      const f = c.f || GENERIC_F[s.round % GENERIC_F.length];
+      return topbar(chips) + `<div class="panel">${tag}<div class="q">${esc(c.q)}</div>
+        <div class="res">${row(1)}${row(2)}</div>
+        ${missed ? `<div class="talkbox"><small>Talk about it</small><div>${esc(f)}</div></div>` : `<div class="talkbox"><small>Perfect sync</small><div>You both nailed it. Smug high-five, then move on.</div></div>`}
+        ${nextBtn}</div>`;
+    }
+    const mine = me && a[me];
+    if (!me || mine) {
+      const waitingOn = me ? other(me) : (!a[1] ? 1 : 2);
+      return topbar(chips) + `<div class="panel">${tag}<div class="q">${esc(c.q)}</div>
+        <div class="status">${me ? `Your answers are locked. Waiting for <b>Player ${waitingOn}</b>…` : `Waiting for Player ${waitingOn}…`}</div></div>`;
+    }
+    const p = S.pending || (S.pending = { self:null, guess:null });
+    const opts = (field, cls) => c.t === 'mc'
+      ? `<div class="opts">${c.opts.map((o, i) => `<button class="opt ${p[field] === i ? 'on ' + cls : ''}" data-act="pick" data-f="${field}" data-v="${i}">${esc(o)}</button>`).join('')}</div>`
+      : `<div class="opts scale">${[1,2,3,4,5].map(i => `<button class="opt ${p[field] === i ? 'on ' + cls : ''}" data-act="pick" data-f="${field}" data-v="${i}">${i}</button>`).join('')}</div>
+         <div class="scale-ends"><span>1 · ${esc(c.l)}</span><span>${esc(c.r)} · 5</span></div>`;
+    return topbar(chips) + `<div class="panel">${tag}<div class="q">${esc(c.q)}</div>
+      <div class="sec"><h3>Your answer</h3>${opts('self', '')}</div>
+      <div class="sec"><h3>Your guess for Player ${other(me)}</h3>${opts('guess', 'g')}</div>
+      <div class="actions"><button data-act="submit" ${p.self == null || p.guess == null ? 'disabled' : ''}>Lock in both</button>
+      <span class="meta">${mode === 'local' ? `You're Player ${me}. Your partner can't see this.` : 'Your partner answers at the same time.'}</span></div></div>`;
+  },
+  onAction: (a, el, { S, commit, clone, me }) => {
+    if (a === 'pick') {
+      S.pending = S.pending || { self:null, guess:null };
+      S.pending[el.dataset.f] = +el.dataset.v; game.render();
+    } else if (a === 'submit') {
+      const s = clone(S.state);
+      if (!me || !S.pending || S.pending.self == null || S.pending.guess == null) return;
+      s.res[s.round] = Object.assign({}, s.res[s.round], { [me]: { self: S.pending.self, guess: S.pending.guess } });
+      const nextUp = !s.res[s.round][1] ? 1 : !s.res[s.round][2] ? 2 : 0;
+      commit(s, nextUp ? { cover: nextUp } : undefined);
+    } else if (a === 'next') {
+      const s = clone(S.state);
+      if (s.round >= s.total) s.phase = 'over'; else s.round++;
+      const c = s.deck[s.round - 1];
+      commit(s, (s.phase !== 'over' && c.t !== 'talk') ? { cover: 1 } : undefined);
+    }
+  }
+});
+</script>
+</body>
+</html>

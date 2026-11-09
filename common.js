@@ -34,7 +34,7 @@ window.TwoPlayer = function (cfg) {
     });
     c.on('data', msg => {
       if (!msg || msg.type !== 'state' || typeof msg.state !== 'object') return;
-      const inc = msg.state;
+      const inc = (cfg.merge && S.state && S.state.phase !== 'lobby') ? cfg.merge(S.state, msg.state) : msg.state;
       if (!S.state || S.state.phase !== inc.phase || S.state.round !== inc.round) S.pending = null;
       S.state = inc; loading = false; render();
     });
@@ -148,7 +148,7 @@ window.TwoPlayer = function (cfg) {
       try { if (conn) conn.close(); if (peer) peer.destroy(); } catch {}
       conn = peer = null; me1 = 0; mode = null; S.state = null; S.pending = null; notice = ''; render();
     }
-    else if (cfg.onAction) cfg.onAction(a, el, { S, commit, render, clone, other, restart });
+    else if (cfg.onAction) cfg.onAction(a, el, { S, commit, render, clone, other, restart, me: role() });
   });
   app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'roomInput') startJoin(e.target.value); });
 
